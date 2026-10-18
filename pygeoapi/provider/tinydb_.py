@@ -262,8 +262,14 @@ class TinyDBProvider(BaseProvider):
             else:
                 sort_reverse = False
 
-            results.sort(key=lambda k: k['properties'][sortby[0]['property']],
-                         reverse=sort_reverse)
+            sort_property = sortby[0]['property']
+
+            # records missing the sort property sort as null values,
+            # after records that carry the property
+            results.sort(
+                key=lambda k: (k['properties'].get(sort_property) is None,
+                               k['properties'].get(sort_property)),
+                reverse=sort_reverse)
 
         feature_collection['features'] = results[offset:offset + limit]
 

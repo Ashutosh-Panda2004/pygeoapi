@@ -31,6 +31,7 @@ import json
 import shutil
 
 import pytest
+from tinydb import TinyDB
 
 from pygeoapi.provider.base import (ProviderItemNotFoundError,
                                     ProviderInvalidQueryError)
@@ -177,6 +178,31 @@ def test_query(config):
 
     results = p.query(sortby=[{'property': 'DATE', 'order': '-'}])
     assert results['features'][0]['id'] == '02HC003.2017-05-27'
+
+
+def test_query_sortby_missing_property(tmp_path):
+    db_file = tmp_path / 'test-sortby.tinydb'
+    db = TinyDB(db_file)
+    db.insert_multiple([
+        {'id': 'a', 'type': 'Feature', 'geometry': None,
+         'properties': {'value': 2}},
+        {'id': 'b', 'type': 'Feature', 'geometry': None,
+         'properties': {'value': 1}},
+        {'id': 'c', 'type': 'Feature', 'geometry': None,
+         'properties': {}}
+    ])
+    db.close()
+
+    config = {
+        'name': 'TinyDB',
+        'type': 'feature',
+        'data': db_file,
+        'id_field': 'id'
+    }
+    p = TinyDBProvider(config)
+
+    results = p.query(sortby=[{'property': 'value', 'order': '+'}])
+    assert [f['id'] for f in results['features']] == ['b', 'a', 'c']
 
 
 def test_get_invalid_property(config):
